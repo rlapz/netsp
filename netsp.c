@@ -27,15 +27,15 @@
 #define BUFFER_SIZE    1024u
 
 
-struct stt {
+struct traf {
 	FILE   *file;
 	size_t  bytes;
 };
 
 struct interface {
-	struct stt rx;
-	struct stt tx;
-	char       name[255];
+	struct traf rx;
+	struct traf tx;
+	char        name[255];
 };
 
 struct netsp {
