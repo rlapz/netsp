@@ -2,6 +2,7 @@
 #define FMT_UP_STR     "↑"                     /* upload indicator   */
 #define FMT_DW_STR     "↓"                     /* download indicator */
 
+#define IO_BUF_SIZE    4096
 #define INTERFACES_MAX 16u                     /* unsigned int       */
 #define DELAY          1000000                 /* microsecond        */
 #define NET_DIR        "/sys/class/net/"

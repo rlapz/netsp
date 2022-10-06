@@ -50,7 +50,7 @@ static int interface_open(struct interface *inf, const char *name,
 			  size_t name_len);
 static int netsp_interfaces_load(struct netsp *net, const char *pfx[],
 				 unsigned pfx_len);
-static void netsp_show(struct netsp *net);
+static int netsp_show(struct netsp *net);
 static void netsp_cleanup(struct netsp *net);
 static int netsp_run(const char *pfx[], unsigned pfx_len);
 static size_t traf_read(struct traf *traf);
@@ -156,17 +156,27 @@ err0:
 }
 
 
-static void
+static int
 netsp_show(struct netsp *net)
 {
 	char fmt[FMT_SIZE];
+	char buffer[IO_BUF_SIZE];
 	const unsigned count = net->infs_count;
 	struct interface *infs = net->infs;
 	const int pad = net->fmt_pad;
 	const char *pf;
 
-	if (count == 0)
-		return;
+
+	if (count == 0) {
+		fprintf(stderr, "netsp_show: No interface\n");
+		return -EINVAL;
+	}
+
+	if (setvbuf(stdout, buffer, _IOFBF, IO_BUF_SIZE) != 0) {
+		int ret = -errno;
+		fprintf(stderr, "netsp_show: setvbuf: %s\n", strerror(-ret));
+		return ret;
+	}
 
 show_again:
 	printf("\x1b[2J\x1b[H");
@@ -182,9 +192,12 @@ show_again:
 		pf = bytes_fmt(fmt, FMT_SIZE, traf_read(&inf->rx));
 		printf(FMT_DW_STR": %*s\n", FMT_PAD, pf);
 	}
+	fflush(stdout);
 	usleep(DELAY);
 
 	goto show_again;
+
+	return 0;
 }
 
 
@@ -209,7 +222,7 @@ netsp_run(const char *pfx[], unsigned pfx_len)
 	if ((ret = netsp_interfaces_load(&net, pfx, pfx_len)) < 0)
 		return ret;
 
-	netsp_show(&net);
+	ret = netsp_show(&net);
 
 	/* Maybe not reached */
 	netsp_cleanup(&net);
