@@ -53,7 +53,7 @@ static void netsp_show(struct netsp *net);
 static void netsp_cleanup(struct netsp *net);
 static int netsp_run(const char *pfx[], unsigned pfx_len);
 static size_t traf_read(struct traf *traf);
-static const char *traf_fmt(char *buffer, size_t b_size, size_t bytes);
+static const char *bytes_fmt(char *buffer, size_t b_size, size_t bytes);
 
 
 static int
@@ -172,14 +172,14 @@ show_again:
 	for (unsigned i = 0; likely(i < count); i++) {
 		struct interface *inf = &infs[i];
 
-		fmt  = traf_fmt(buffer, BUFFER_SIZE, inf->tx.bytes +
-				inf->rx.bytes);
+		fmt  = bytes_fmt(buffer, BUFFER_SIZE,
+				 inf->tx.bytes + inf->rx.bytes);
 		printf("%-*s [%*s] ", pad, inf->name, FMT_PAD, fmt);
 
-		fmt  = traf_fmt(buffer, BUFFER_SIZE, traf_read(&inf->tx));
+		fmt  = bytes_fmt(buffer, BUFFER_SIZE, traf_read(&inf->tx));
 		printf(FMT_UP_STR": %*s ", FMT_PAD, fmt);
 
-		fmt  = traf_fmt(buffer, BUFFER_SIZE, traf_read(&inf->rx));
+		fmt  = bytes_fmt(buffer, BUFFER_SIZE, traf_read(&inf->rx));
 		printf(FMT_DW_STR": %*s\n", FMT_PAD, fmt);
 	}
 	usleep(DELAY);
@@ -233,7 +233,7 @@ traf_read(struct traf *traf)
 
 /* slstatus: util.c: fmt_human() */
 static const char *
-traf_fmt(char *buffer, size_t b_size, size_t bytes)
+bytes_fmt(char *buffer, size_t b_size, size_t bytes)
 {
 	const char prefix[] = { 'b', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y' };
 	size_t scaled = bytes;
