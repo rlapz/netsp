@@ -24,7 +24,8 @@
 #define unlikely(X)    __builtin_expect((bool)(X), 0)
 #define likely(X)      __builtin_expect((bool)(X), 1)
 
-#define BUFFER_SIZE    1024u
+#define FMT_SIZE       (256 + 64)
+#define PATH_SIZE      (sizeof(NET_DIR) + sizeof(RX_BYTES) + 255)
 
 
 struct traf {
@@ -35,7 +36,7 @@ struct traf {
 struct interface {
 	struct traf rx;
 	struct traf tx;
-	char        name[255];
+	char        name[256];
 };
 
 struct netsp {
@@ -60,12 +61,12 @@ static int
 interface_open(struct interface *inf, const char *name, size_t name_len)
 {
 	int ret;
-	char path[1024];
+	char path[PATH_SIZE];
 	const char *err_ctx;
 
 	/* RX */
 	err_ctx = name;
-	if (snprintf(path, sizeof(path), "%s%s%s", NET_DIR, name, RX_BYTES) < 0)
+	if (snprintf(path, PATH_SIZE, "%s%s%s", NET_DIR, name, RX_BYTES) < 0)
 		goto err0;
 
 	err_ctx = path;
@@ -74,7 +75,7 @@ interface_open(struct interface *inf, const char *name, size_t name_len)
 
 	/* TX */
 	err_ctx = name;
-	if (snprintf(path, sizeof(path), "%s%s%s", NET_DIR, name, TX_BYTES) < 0)
+	if (snprintf(path, PATH_SIZE, "%s%s%s", NET_DIR, name, TX_BYTES) < 0)
 		goto err0;
 
 	err_ctx = path;
@@ -158,11 +159,11 @@ err0:
 static void
 netsp_show(struct netsp *net)
 {
-	char buffer[BUFFER_SIZE];
+	char fmt[FMT_SIZE];
 	const unsigned count = net->infs_count;
 	struct interface *infs = net->infs;
 	const int pad = net->fmt_pad;
-	const char *fmt;
+	const char *pf;
 
 	if (count == 0)
 		return;
@@ -172,15 +173,14 @@ show_again:
 	for (unsigned i = 0; likely(i < count); i++) {
 		struct interface *inf = &infs[i];
 
-		fmt  = bytes_fmt(buffer, BUFFER_SIZE,
-				 inf->tx.bytes + inf->rx.bytes);
-		printf("%-*s [%*s] ", pad, inf->name, FMT_PAD, fmt);
+		pf = bytes_fmt(fmt, FMT_SIZE, inf->tx.bytes + inf->rx.bytes);
+		printf("%-*s [%*s] ", pad, inf->name, FMT_PAD, pf);
 
-		fmt  = bytes_fmt(buffer, BUFFER_SIZE, traf_read(&inf->tx));
-		printf(FMT_UP_STR": %*s ", FMT_PAD, fmt);
+		pf = bytes_fmt(fmt, FMT_SIZE, traf_read(&inf->tx));
+		printf(FMT_UP_STR": %*s ", FMT_PAD, pf);
 
-		fmt  = bytes_fmt(buffer, BUFFER_SIZE, traf_read(&inf->rx));
-		printf(FMT_DW_STR": %*s\n", FMT_PAD, fmt);
+		pf = bytes_fmt(fmt, FMT_SIZE, traf_read(&inf->rx));
+		printf(FMT_DW_STR": %*s\n", FMT_PAD, pf);
 	}
 	usleep(DELAY);
 
