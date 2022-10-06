@@ -52,7 +52,7 @@ static int netsp_interfaces_load(struct netsp *net, const char *pfx[],
 static void netsp_show(struct netsp *net);
 static void netsp_cleanup(struct netsp *net);
 static int netsp_run(const char *pfx[], unsigned pfx_len);
-static size_t traf_read(FILE *fp, size_t *traf);
+static size_t traf_read(struct traf *traf);
 static const char *traf_fmt(char *buffer, size_t b_size, size_t bytes);
 
 
@@ -161,7 +161,6 @@ netsp_show(struct netsp *net)
 	char buffer[BUFFER_SIZE];
 	const unsigned count = net->infs_count;
 	struct interface *infs = net->infs;
-	size_t traf;
 	const int pad = net->fmt_pad;
 	const char *fmt;
 
@@ -173,16 +172,14 @@ show_again:
 	for (unsigned i = 0; likely(i < count); i++) {
 		struct interface *inf = &infs[i];
 
-		traf = inf->tx.bytes + inf->rx.bytes;
-		fmt  = traf_fmt(buffer, BUFFER_SIZE, traf);
+		fmt  = traf_fmt(buffer, BUFFER_SIZE, inf->tx.bytes +
+				inf->rx.bytes);
 		printf("%-*s [%*s] ", pad, inf->name, FMT_PAD, fmt);
 
-		traf = traf_read(inf->tx.file, &inf->tx.bytes);
-		fmt  = traf_fmt(buffer, BUFFER_SIZE, traf);
+		fmt  = traf_fmt(buffer, BUFFER_SIZE, traf_read(&inf->tx));
 		printf(FMT_UP_STR": %*s ", FMT_PAD, fmt);
 
-		traf = traf_read(inf->rx.file, &inf->rx.bytes);
-		fmt  = traf_fmt(buffer, BUFFER_SIZE, traf);
+		fmt  = traf_fmt(buffer, BUFFER_SIZE, traf_read(&inf->rx));
 		printf(FMT_DW_STR": %*s\n", FMT_PAD, fmt);
 	}
 	usleep(DELAY);
@@ -222,14 +219,15 @@ netsp_run(const char *pfx[], unsigned pfx_len)
 
 
 static size_t
-traf_read(FILE *fp, size_t *traf)
+traf_read(struct traf *traf)
 {
-	const size_t old_traf = *traf;
+	struct traf *tf = traf;
+	const size_t old_traf = tf->bytes;
 
-	while (likely(fscanf(fp, "%zu", traf) != EOF));
-	rewind(fp);
+	while (likely(fscanf(tf->file, "%zu", &tf->bytes) != EOF));
+	rewind(tf->file);
 
-	return *traf - old_traf;
+	return tf->bytes - old_traf;
 }
 
 
