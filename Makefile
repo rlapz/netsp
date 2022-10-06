@@ -11,7 +11,7 @@ VERSION = 0.0.1-dev
 
 PREFIX  = /usr
 CC      = cc
-CFLAGS  = -std=c99 -Wall -Wextra -pedantic -O3 -static
+CFLAGS  = -std=c99 -Wall -Wextra -pedantic -O3
 
 SRC     = netsp.c
 BIN_DIR = $(DESTDIR)$(PREFIX)/bin
