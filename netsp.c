@@ -54,7 +54,7 @@ static int netsp_show(struct netsp *net);
 static void netsp_cleanup(struct netsp *net);
 static int netsp_run(const char *pfx[], unsigned pfx_len);
 static size_t traf_read(struct traf *traf);
-static const char *bytes_fmt(char *buffer, size_t b_size, size_t bytes);
+static const char *bytes_fmt(char *buf, size_t buf_size, size_t bytes);
 
 
 static int
@@ -187,10 +187,10 @@ show_again:
 		printf("%-*s [%*s] ", pad, inf->name, FMT_PAD, pf);
 
 		pf = bytes_fmt(fmt, FMT_SIZE, traf_read(&inf->tx));
-		printf(FMT_UP_STR": %*s ", FMT_PAD, pf);
+		printf(FMT_UP_STR ": %*s ", FMT_PAD, pf);
 
 		pf = bytes_fmt(fmt, FMT_SIZE, traf_read(&inf->rx));
-		printf(FMT_DW_STR": %*s\n", FMT_PAD, pf);
+		printf(FMT_DW_STR ": %*s\n", FMT_PAD, pf);
 	}
 	fflush(stdout);
 	usleep(DELAY);
@@ -246,19 +246,20 @@ traf_read(struct traf *traf)
 
 /* slstatus: util.c: fmt_human() */
 static const char *
-bytes_fmt(char *buffer, size_t b_size, size_t bytes)
+bytes_fmt(char *buf, size_t buf_size, size_t bytes)
 {
 	const char prefix[] = { 'b', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y' };
-	size_t scaled = bytes;
+	double scaled = bytes;
 	size_t i;
 
-	for (i = 0; likely((i < sizeof(prefix)) && (scaled >= 1000)); i++)
-		scaled >>= 10;
+	for (i = 0; likely((i < sizeof(prefix)) && (scaled >= FMT_BASE)); i++)
+		scaled /= FMT_BASE;
 
-	if (unlikely(snprintf(buffer, b_size, "%zu%c", scaled, prefix[i]) < 0))
+	int sp = snprintf(buf, buf_size, "%." FMT_PREC "f%c", scaled, prefix[i]);
+	if (unlikely(sp < 0))
 		return "-";
 
-	return buffer;
+	return buf;
 }
 
 
