@@ -24,7 +24,7 @@ config.h:
 
 $(TARGET): config.h netsp.c
 	@printf "\n%s\n" "Creating executable file..."
-	$(CC) $(CFLAGS) $(^) -o $(@)
+	$(CC) $(CFLAGS) netsp.c -o $(@)
 # -----------------------------------------------------------------------#
 
 options:
