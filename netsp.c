@@ -23,6 +23,7 @@
 #define LEN(X)         (sizeof(X) / sizeof(*X))
 #define unlikely(X)    __builtin_expect((bool)(X), 0)
 #define likely(X)      __builtin_expect((bool)(X), 1)
+#define __hot          __attribute__((__hot__))
 
 #define FMT_SIZE       (256 + 64)
 #define PATH_SIZE      (sizeof(NET_DIR) + sizeof(RX_BYTES) + 255)
@@ -53,8 +54,8 @@ static int netsp_interfaces_load(struct netsp *net, const char *pfx[],
 static int netsp_show(struct netsp *net);
 static void netsp_cleanup(struct netsp *net);
 static int netsp_run(const char *pfx[], unsigned pfx_len);
-static size_t traf_read(struct traf *traf);
-static const char *bytes_fmt(char *buf, size_t buf_size, size_t bytes);
+static __hot size_t traf_read(struct traf *traf);
+static __hot const char *bytes_fmt(char *buf, size_t buf_size, size_t bytes);
 
 
 static int
@@ -231,7 +232,7 @@ netsp_run(const char *pfx[], unsigned pfx_len)
 }
 
 
-static size_t
+static __hot size_t
 traf_read(struct traf *traf)
 {
 	struct traf *tf = traf;
@@ -245,7 +246,7 @@ traf_read(struct traf *traf)
 
 
 /* slstatus: util.c: fmt_human() */
-static const char *
+static __hot const char *
 bytes_fmt(char *buf, size_t buf_size, size_t bytes)
 {
 	const char prefix[] = { 'b', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y' };
