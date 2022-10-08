@@ -50,10 +50,10 @@ struct netsp {
 static int interface_open(struct interface *inf, const char *name,
 			  size_t name_len);
 static int netsp_interfaces_load(struct netsp *net, const char *pfx[],
-				 unsigned pfx_len);
+				 int pfx_len);
 static int netsp_show(struct netsp *net);
 static void netsp_cleanup(struct netsp *net);
-static int netsp_run(const char *pfx[], unsigned pfx_len);
+static int netsp_run(const char *pfx[], int pfx_len);
 static __hot size_t traf_read(struct traf *traf);
 static __hot const char *bytes_fmt(char *buf, size_t buf_size, size_t bytes);
 
@@ -68,26 +68,26 @@ interface_open(struct interface *inf, const char *name, size_t name_len)
 	/* RX */
 	err_ctx = name;
 	if (snprintf(path, PATH_SIZE, "%s%s%s", NET_DIR, name, RX_BYTES) < 0)
-		goto err0;
+		goto err;
 
 	err_ctx = path;
 	if ((inf->rx.file = fopen(path, "r")) == NULL)
-		goto err0;
+		goto err;
 
 	/* TX */
 	err_ctx = name;
 	if (snprintf(path, PATH_SIZE, "%s%s%s", NET_DIR, name, TX_BYTES) < 0)
-		goto err0;
+		goto err;
 
 	err_ctx = path;
 	if ((inf->tx.file = fopen(path, "r")) == NULL)
-		goto err0;
+		goto err;
 
 	memcpy(inf->name, name, name_len);
 	inf->name[name_len] = '\0';
 	return 0;
 
-err0:
+err:
 	ret = -errno;
 	if (inf->rx.file != NULL)
 		fclose(inf->rx.file);
@@ -98,7 +98,7 @@ err0:
 
 
 static int
-netsp_interfaces_load(struct netsp *net, const char *pfx[], unsigned pfx_len) 
+netsp_interfaces_load(struct netsp *net, const char *pfx[], int pfx_len)
 {
 	int ret = 0;
 	int fmt_pad = 0;
@@ -109,11 +109,10 @@ netsp_interfaces_load(struct netsp *net, const char *pfx[], unsigned pfx_len)
 
 	if ((dir = opendir(NET_DIR)) == NULL) {
 		ret = -errno;
-		goto err0;
+		goto err;
 	}
 
 	while (count < INTERFACES_MAX) {
-readdir_again:
 		errno = 0;
 		if ((dirent = readdir(dir)) == NULL) {
 			if (errno != 0)
@@ -121,31 +120,31 @@ readdir_again:
 			break;
 		}
 
-		const char *d_name = dirent->d_name;
-		if (d_name[0] == '.')
-			goto readdir_again;
+		const char *fname = dirent->d_name;
+		if (fname[0] == '.')
+			continue;
 
-		/* Load all interfaces */
+		const size_t flen = strlen(fname);
+
+		/* try to load all interfaces */
 		if (pfx == NULL || pfx_len == 0) {
-			const size_t _len = strlen(d_name);
-			if (_len > (size_t)fmt_pad)
-				fmt_pad = _len;
+			if (flen > (size_t)fmt_pad)
+				fmt_pad = flen;
 
-			if (interface_open(&infs[count], d_name, _len) == 0)
+			if (interface_open(&infs[count], fname, flen) == 0)
 				count++;
 
 			continue;
 		}
 
-		for (unsigned j = 0; j < pfx_len; j++) {
-			if (strncmp(d_name, pfx[j], strlen(pfx[j])) != 0)
+		for (int j = 0; j < pfx_len; j++) {
+			if (strncmp(fname, pfx[j], strlen(pfx[j])) != 0)
 				continue;
 
-			const size_t _len = strlen(d_name);
-			if (_len > (size_t)fmt_pad)
-				fmt_pad = _len;
+			if (flen > (size_t)fmt_pad)
+				fmt_pad = flen;
 
-			if (interface_open(&infs[count], d_name, _len) == 0)
+			if (interface_open(&infs[count], fname, flen) == 0)
 				count++;
 		}
 	}
@@ -155,11 +154,11 @@ readdir_again:
 	closedir(dir);
 
 	if (ret < 0)
-		goto err0;
+		goto err;
 
 	return 0;
 
-err0:
+err:
 	netsp_cleanup(net);
 	fprintf(stderr, "netsp_interfaces_load: %s: %s\n", NET_DIR,
 		strerror(-ret));
@@ -223,7 +222,7 @@ netsp_cleanup(struct netsp *net)
 
 
 static int
-netsp_run(const char *pfx[], unsigned pfx_len)
+netsp_run(const char *pfx[], int pfx_len)
 {
 	int ret = 0;
 	struct netsp net;
@@ -294,18 +293,18 @@ int
 main(int argc, const char *argv[])
 {
 	if (argc < 2)
-		goto err0;
+		goto err;
 
 	if (strcmp(argv[1], "--all") == 0) {
 		if (argc != 2)
-			goto err0;
+			goto err;
 
 		return -netsp_run(NULL, 0);
 	}
 
-	return -netsp_run(argv + 1, (unsigned)argc - 1);
+	return -netsp_run(argv + 1, argc - 1);
 
-err0:
+err:
 	netsp_help(argv[0]);
 	return EINVAL;
 }
