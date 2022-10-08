@@ -112,7 +112,7 @@ netsp_interfaces_load(struct netsp *net, const char *pfx[], unsigned pfx_len)
 		goto err0;
 	}
 
-	for (unsigned i = 0; i < INTERFACES_MAX; i++) {
+	while (count < INTERFACES_MAX) {
 readdir_again:
 		errno = 0;
 		if ((dirent = readdir(dir)) == NULL) {
@@ -125,18 +125,28 @@ readdir_again:
 		if (d_name[0] == '.')
 			goto readdir_again;
 
+		/* Load all interfaces */
+		if (pfx == NULL || pfx_len == 0) {
+			const size_t _len = strlen(d_name);
+			if (_len > (size_t)fmt_pad)
+				fmt_pad = _len;
+
+			if (interface_open(&infs[count], d_name, _len) == 0)
+				count++;
+
+			continue;
+		}
+
 		for (unsigned j = 0; j < pfx_len; j++) {
 			if (strncmp(d_name, pfx[j], strlen(pfx[j])) != 0)
 				continue;
 
-			const size_t d_name_len = strlen(d_name);
-			if (d_name_len > (size_t)fmt_pad)
-				fmt_pad = d_name_len;
+			const size_t _len = strlen(d_name);
+			if (_len > (size_t)fmt_pad)
+				fmt_pad = _len;
 
-			if (interface_open(&infs[count], d_name, d_name_len) < 0)
-				continue;
-
-			count++;
+			if (interface_open(&infs[count], d_name, _len) == 0)
+				count++;
 		}
 	}
 
@@ -166,7 +176,6 @@ netsp_show(struct netsp *net)
 	struct interface *infs = net->infs;
 	const int pad = net->fmt_pad;
 	const char *pf;
-
 
 	if (count == 0) {
 		fprintf(stderr, "netsp_show: No interface\n");
@@ -268,21 +277,35 @@ static void
 netsp_help(const char *app_name)
 {
 	printf("netsp - A simple bandwidth monitor\n\n"
-		"Usage: %s [NET_PREFIX_1] [NET_PREFIX_2] ...\n"
+		"Usage: \n"
+		" Load interface by its prefix name\n"
+		" %s [NET_PREFIX_1] [NET_PREFIX_2] ...\n\n"
+		" Load all interfaces\n"
+		" %s --all\n\n"
 		"Example:\n"
+		" %s --all\n"
 		" %s w e\n"
 		" %s wlan eth\n",
-		app_name, app_name, app_name);
+		app_name, app_name, app_name, app_name, app_name);
 }
 
 
 int
 main(int argc, const char *argv[])
 {
-	if (argc < 2) {
-		netsp_help(argv[0]);
-		return EINVAL;
+	if (argc < 2)
+		goto err0;
+
+	if (strcmp(argv[1], "--all") == 0) {
+		if (argc != 2)
+			goto err0;
+
+		return -netsp_run(NULL, 0);
 	}
 
 	return -netsp_run(argv + 1, (unsigned)argc - 1);
+
+err0:
+	netsp_help(argv[0]);
+	return EINVAL;
 }
