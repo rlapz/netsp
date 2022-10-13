@@ -13,7 +13,6 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -21,8 +20,8 @@
 #include "config.h"
 
 #define LEN(X)         (sizeof(X) / sizeof(*X))
-#define unlikely(X)    __builtin_expect((bool)(X), 0)
-#define likely(X)      __builtin_expect((bool)(X), 1)
+#define unlikely(X)    __builtin_expect(!!(X), 0)
+#define likely(X)      __builtin_expect(!!(X), 1)
 #define __hot          __attribute__((__hot__))
 
 #define FMT_SIZE       (256 + 64)
@@ -54,8 +53,8 @@ static int netsp_interfaces_load(struct netsp *net, const char *pfx[],
 static int netsp_show(struct netsp *net);
 static void netsp_cleanup(struct netsp *net);
 static int netsp_run(const char *pfx[], int pfx_len);
-static __hot size_t traf_read(struct traf *traf);
-static __hot const char *bytes_fmt(char *buf, size_t buf_size, size_t bytes);
+static size_t traf_read(struct traf *traf);
+static const char *bytes_fmt(char *buf, size_t buf_size, size_t bytes);
 
 
 static int
@@ -303,6 +302,9 @@ main(int argc, const char *argv[])
 
 		return -netsp_run(NULL, 0);
 	}
+
+	if (argv[1][0] == '-')
+		goto err;
 
 	return -netsp_run(argv + 1, argc - 1);
 
