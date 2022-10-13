@@ -196,7 +196,9 @@ show_again:
 		printf("%-*s [%*s] ", pad, inf->name, FMT_PAD, pf);
 
 		pf = bytes_fmt(fmt, FMT_SIZE, traf_read(&inf->tx));
-		printf(FMT_UP_STR ": %*s ", FMT_PAD, pf);
+		printf(FMT_UP_STR ": %*s", FMT_PAD, pf);
+
+		printf(" - ");
 
 		pf = bytes_fmt(fmt, FMT_SIZE, traf_read(&inf->rx));
 		printf(FMT_DW_STR ": %*s\n", FMT_PAD, pf);
