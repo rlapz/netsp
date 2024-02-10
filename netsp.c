@@ -120,7 +120,7 @@ netsp_interfaces_load(struct netsp *net, const char *pfx[], int pfx_len)
 			break;
 		}
 
-		const char *fname = dirent->d_name;
+		const char *const fname = dirent->d_name;
 		if (fname[0] == '.')
 			continue;
 
@@ -182,7 +182,7 @@ netsp_show(struct netsp *net)
 	}
 
 	if (setvbuf(stdout, buffer, _IOFBF, IO_BUF_SIZE) != 0) {
-		int ret = -errno;
+		const int ret = -errno;
 		fprintf(stderr, "netsp_show: setvbuf: %s\n", strerror(-ret));
 		return ret;
 	}
@@ -190,7 +190,7 @@ netsp_show(struct netsp *net)
 show_again:
 	printf("\x1b[2J\x1b[H");
 	for (unsigned i = 0; likely(i < count); i++) {
-		struct interface *inf = &infs[i];
+		struct interface *const inf = &infs[i];
 
 		pf = bytes_fmt(fmt, FMT_SIZE, inf->tx.bytes + inf->rx.bytes);
 		printf("%-*s [%*s] ", pad, inf->name, FMT_PAD, pf);
@@ -275,7 +275,7 @@ netsp_run(const char *pfx[], int pfx_len)
 static __hot size_t
 traf_read(struct traf *traf)
 {
-	struct traf *tf = traf;
+	struct traf *const tf = traf;
 	const size_t old_traf = tf->bytes;
 
 	while (likely(fscanf(tf->file, "%zu", &tf->bytes) != EOF));
@@ -296,7 +296,7 @@ bytes_fmt(char *buf, size_t buf_size, size_t bytes)
 	for (i = 0; likely((i < sizeof(prefix)) && (scaled >= FMT_BASE)); i++)
 		scaled /= FMT_BASE;
 
-	int sp = snprintf(buf, buf_size, "%." FMT_PREC "f%c", scaled, prefix[i]);
+	const int sp = snprintf(buf, buf_size, "%." FMT_PREC "f%c", scaled, prefix[i]);
 	if (unlikely(sp < 0))
 		return "-";
 
