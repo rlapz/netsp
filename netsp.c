@@ -55,6 +55,7 @@ static void netsp_cleanup(struct netsp *net);
 static int netsp_run(const char *pfx[], int pfx_len);
 static size_t traf_read(struct traf *traf);
 static const char *bytes_fmt(char *buf, size_t buf_size, size_t bytes);
+static void netsp_show_interfaces(void);
 
 
 static int
@@ -212,6 +213,36 @@ show_again:
 
 
 static void
+netsp_show_interfaces(void)
+{
+	DIR *const dir = opendir(NET_DIR);
+	if (dir == NULL) {
+		perror("netsp_show_interfaces: opendir");
+		return;
+	}
+
+	while (1) {
+		errno = 0;
+		struct dirent *const dirent = readdir(dir);
+		if (dirent == NULL) {
+			if (errno != 0)
+				perror("netsp_show_interfaces: readdir");
+
+			break;
+		}
+
+		const char *const fname = dirent->d_name;
+		if (fname[0] == '.')
+			continue;
+
+		puts(fname);
+	}
+
+	closedir(dir);
+}
+
+
+static void
 netsp_cleanup(struct netsp *net)
 {
 	unsigned count = net->infs_count;
@@ -282,11 +313,13 @@ netsp_help(const char *app_name)
 		" %s [NET_PREFIX_1] [NET_PREFIX_2] ...\n\n"
 		" Load all interfaces\n"
 		" %s --all\n\n"
+		" Show interfaces\n"
+		" %s --show\n\n"
 		"Example:\n"
 		" %s --all\n"
 		" %s w e\n"
 		" %s wlan eth\n",
-		app_name, app_name, app_name, app_name, app_name);
+		app_name, app_name, app_name, app_name, app_name, app_name);
 }
 
 
@@ -295,6 +328,11 @@ main(int argc, const char *argv[])
 {
 	if (argc < 2)
 		goto err;
+
+	if (strcmp(argv[1], "--show") == 0) {
+		netsp_show_interfaces();
+		return 0;
+	}
 
 	if (strcmp(argv[1], "--all") == 0) {
 		if (argc != 2)
