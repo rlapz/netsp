@@ -187,8 +187,13 @@ netsp_show(struct netsp *net)
 		return ret;
 	}
 
+	// save cursor position
+	printf("\x1b[s");
+
 show_again:
-	printf("\x1b[2J\x1b[H");
+	// restore cursor position
+	printf("\x1b[u");
+
 	for (unsigned i = 0; likely(i < count); i++) {
 		struct interface *const inf = &infs[i];
 
@@ -203,9 +208,9 @@ show_again:
 		pf = bytes_fmt(fmt, FMT_SIZE, traf_read(&inf->rx));
 		printf(FMT_DW_STR ": %*s\n", FMT_PAD, pf);
 	}
+
 	fflush(stdout);
 	usleep(DELAY);
-
 	goto show_again;
 
 	return 0;
